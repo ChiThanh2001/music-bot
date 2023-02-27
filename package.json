@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@discordjs/opus": "^0.8.0",
+    "@discordjs/voice": "^0.14.0",
     "discord.js": "^14.7.1",
+    "ffmpeg-static": "^5.1.0",
     "node-fetch-npm": "^2.0.4",
     "nodemon": "^2.0.20",
+    "sodium-native": "^4.0.1",
     "ytdl-core": "^4.11.2"
   }
 }
