@@ -18,6 +18,7 @@
     "node-fetch-npm": "^2.0.4",
     "nodemon": "^2.0.20",
     "sodium-native": "^4.0.1",
+    "yt-search": "^2.10.4",
     "ytdl-core": "^4.11.2"
   }
 }

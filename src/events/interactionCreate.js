@@ -8,6 +8,8 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
   ],
 });
+const { createAudioResource, StreamType } = require("@discordjs/voice");
+
 client.commands = collection;
 
 module.exports = {
