@@ -1,4 +1,8 @@
-const { SlashCommandBuilder } = require("discord.js");
+const {
+  Client,
+  SlashCommandBuilder,
+  GatewayIntentBits,
+} = require("discord.js");
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -6,6 +10,7 @@ const {
   getVoiceConnection,
   AudioPlayer,
   VoiceConnectionStatus,
+  AudioPlayerStatus,
 } = require("@discordjs/voice");
 const ytdl = require("ytdl-core");
 const ytSearch = require("yt-search");
@@ -40,14 +45,10 @@ module.exports = {
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-      selfDeaf: false,
-      selfMute: false,
+      // selfDeaf: false,
+      // selfMute: false,
     });
 
-    const getConnection = getVoiceConnection(interaction.guildId);
-    const memberOfVoiceChannel = interaction.member.voice.channel.members.size;
-
-    // console.log(humanMember[0].guild.name);
     const songName = interaction.options.getString("music_name");
     connection.subscribe(player);
 
@@ -72,23 +73,23 @@ module.exports = {
         }
       }
     );
-
+    console.log(__dirname);
     const search = await ytSearch(songName);
     const urlSearch = search.videos[0].url;
 
     const ytdlProcess = ytdl(urlSearch, { filter: "audioonly" });
-
+    const infor = await ytdl.getInfo(urlSearch);
     ytdlProcess.on("error", (error) => console.error(error));
-
     const resource = createAudioResource(ytdlProcess);
 
     player.play(resource);
 
+    player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
+      console.log("Audio player is in the Playing state!");
+    });
+
     player.on("error", (error) => {
-      console.error(
-        `Error: ${error.message} with resource ${error.resource.metadata.title}`
-      );
-      player.play(getNextResource());
+      console.error(`Error: ${error.message} with resource ${error.resource}`);
     });
 
     return interaction.editReply({ content: `Played ${urlSearch}` });
