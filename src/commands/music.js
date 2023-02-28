@@ -77,9 +77,11 @@ module.exports = {
     const search = await ytSearch(songName);
     const urlSearch = search.videos[0].url;
 
-    const ytdlProcess = ytdl(urlSearch, { filter: "audioonly" });
-    const infor = await ytdl.getInfo(urlSearch);
-    ytdlProcess.on("error", (error) => console.error(error));
+    const ytdlProcess = ytdl(urlSearch, {
+      filter: "audioonly",
+      highWaterMark: 1 << 25,
+    });
+    ytdlProcess.on("error", (error) => console.error("process error: ", error));
     const resource = createAudioResource(ytdlProcess);
 
     player.play(resource);
@@ -89,7 +91,9 @@ module.exports = {
     });
 
     player.on("error", (error) => {
-      console.error(`Error: ${error.message} with resource ${error.resource}`);
+      console.error(
+        `Error player: ${error.message} with resource ${error.resource}`
+      );
     });
 
     return interaction.editReply({ content: `Played ${urlSearch}` });
