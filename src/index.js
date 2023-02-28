@@ -25,11 +25,6 @@ client.once("ready", (c) => {
 
 loadingCommand();
 
-const {
-  VoiceConnectionStatus,
-  AudioPlayerStatus,
-} = require("@discordjs/voice");
-
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs
   .readdirSync(eventsPath)

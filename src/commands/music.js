@@ -3,19 +3,27 @@ const {
   SlashCommandBuilder,
   GatewayIntentBits,
 } = require("discord.js");
+
 const {
   joinVoiceChannel,
   createAudioPlayer,
   createAudioResource,
-  getVoiceConnection,
-  AudioPlayer,
   VoiceConnectionStatus,
   AudioPlayerStatus,
 } = require("@discordjs/voice");
+
 const ytdl = require("ytdl-core");
 const ytSearch = require("yt-search");
 const player = createAudioPlayer();
-const fs = require("fs");
+
+function isValidUrl(userInput) {
+  try {
+    const parsedUrl = new URL(userInput);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+  } catch (err) {
+    return false;
+  }
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,7 +32,7 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("music_name")
-        .setDescription("The name of music")
+        .setDescription("The name of music or url link")
         .setRequired(true)
     ),
   async execute(interaction) {
@@ -49,15 +57,6 @@ module.exports = {
       // selfMute: false,
     });
 
-    const songName = interaction.options.getString("music_name");
-    connection.subscribe(player);
-
-    connection.on(VoiceConnectionStatus.Ready, () => {
-      console.log(
-        "The connection has entered the Ready state - ready to play audio!"
-      );
-    });
-
     connection.on(
       VoiceConnectionStatus.Disconnected,
       async (oldState, newState) => {
@@ -73,7 +72,35 @@ module.exports = {
         }
       }
     );
-    console.log(__dirname);
+
+    connection.on(VoiceConnectionStatus.Ready, () => {
+      console.log(
+        "The connection has entered the Ready state - ready to play audio!"
+      );
+    });
+
+    connection.subscribe(player);
+    const songName = interaction.options.getString("music_name");
+    
+    //check if the user's input is a url or not , if the user's input is url then do the if block code
+    if(isValidUrl(songName)){
+      const ytdlProcess = ytdl(songName, {
+        filter: "audioonly",
+        highWaterMark: 1 << 25,
+      });
+
+      ytdlProcess.on("error", (error) => console.error("process error: ", error));
+      const resource = createAudioResource(ytdlProcess);
+      
+      player.play(resource);
+
+      player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
+        console.log("Audio player is in the Playing state!");
+      });
+      return 
+    }
+
+    //if the user's input is a song name then do this code
     const search = await ytSearch(songName);
     const urlSearch = search.videos[0].url;
 
