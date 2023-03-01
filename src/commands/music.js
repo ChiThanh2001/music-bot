@@ -92,7 +92,7 @@ module.exports = {
 
     player.on("error", (error) => {
       console.error(
-        `Error player: ${error.message} with resource ${error.resource}`
+        `Error resource: ${error.message} with resource ${error.resource.metadata.title}`
       );
     });
 
