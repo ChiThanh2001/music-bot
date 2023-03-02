@@ -10,7 +10,6 @@ const {
 
 const ytdl = require("ytdl-core");
 const ytSearch = require("yt-search");
-const player = createAudioPlayer();
 
 // function to check whether input is valid
 function isValidUrl(userInput) {
@@ -42,6 +41,7 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
+    const player = createAudioPlayer();
     // get the voice channel
     const voiceChannel = interaction.member.voice.channel;
 
@@ -97,6 +97,7 @@ module.exports = {
     );
 
     //subcribe player to connection so player can play audio
+    connection.player = player;
     connection.subscribe(player);
 
     //get the song name
@@ -119,7 +120,7 @@ module.exports = {
         });
         const resource = createAudioResource(ytdlProcess);
 
-        player.play(resource);
+        connection.player.play(resource);
 
         player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
           console.log("Audio player is in the Playing state!");
@@ -144,7 +145,7 @@ module.exports = {
     ytdlProcess.on("error", (error) => console.error("process error: ", error));
     const resource = createAudioResource(ytdlProcess);
 
-    player.play(resource);
+    connection.player.play(resource);
 
     player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
       console.log("Audio player is in the Playing state!");
