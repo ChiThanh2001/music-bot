@@ -1,8 +1,4 @@
-const {
-  Client,
-  SlashCommandBuilder,
-  GatewayIntentBits,
-} = require("discord.js");
+const { SlashCommandBuilder } = require("discord.js");
 
 const {
   joinVoiceChannel,
@@ -16,13 +12,23 @@ const ytdl = require("ytdl-core");
 const ytSearch = require("yt-search");
 const player = createAudioPlayer();
 
+// function to check whether input is valid
 function isValidUrl(userInput) {
   try {
     const parsedUrl = new URL(userInput);
-    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
   } catch (err) {
     return false;
   }
+}
+
+function isYoutubeUrl(url) {
+  // YouTube URL pattern regex
+  const youtubeUrlPattern =
+    /^(http(s)?:\/\/)?((w){3}.)?youtu(be|.be)?(\.com)?\/.+/;
+
+  // Match URL against YouTube URL pattern
+  return youtubeUrlPattern.test(url);
 }
 
 module.exports = {
@@ -36,27 +42,44 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction) {
+    // get the voice channel
     const voiceChannel = interaction.member.voice.channel;
+
+    //the reply language of the bot depend on what country you are
     const locales = {
       vi: "Bạn phải ở trong phòng voice để có thể sử dụng câu lệnh này",
       "en-US": "You must in a voice channel to use this slash command",
     };
+
+    //get the member
     const member = interaction.member;
+
+    //check whether the member who used slash command in the voice channel
     if (!member.voice.channel) {
       interaction.reply(locales[interaction.locale]);
       return;
     }
 
+    // because the interaction reply can take a long time so i use defer reply to wait the reply until it completed
     await interaction.deferReply();
 
+    // join the voice channel
     const connection = joinVoiceChannel({
       channelId: voiceChannel.id,
       guildId: voiceChannel.guild.id,
       adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-      // selfDeaf: false,
-      // selfMute: false,
+      selfDeaf: false,
+      selfMute: false,
     });
 
+    //check if the voice connection ready to play audio or not
+    connection.on(VoiceConnectionStatus.Ready, () => {
+      console.log(
+        "The connection has entered the Ready state - ready to play audio!"
+      );
+    });
+
+    //check if the connection was really disconnected or not
     connection.on(
       VoiceConnectionStatus.Disconnected,
       async (oldState, newState) => {
@@ -73,31 +96,41 @@ module.exports = {
       }
     );
 
-    connection.on(VoiceConnectionStatus.Ready, () => {
-      console.log(
-        "The connection has entered the Ready state - ready to play audio!"
-      );
-    });
-
+    //subcribe player to connection so player can play audio
     connection.subscribe(player);
+
+    //get the song name
     const songName = interaction.options.getString("music_name");
-    
+
     //check if the user's input is a url or not , if the user's input is url then do the if block code
-    if(isValidUrl(songName)){
-      const ytdlProcess = ytdl(songName, {
-        filter: "audioonly",
-        highWaterMark: 1 << 25,
-      });
+    if (isValidUrl(songName)) {
+      //check if the url was provided is valid url youtube or not
+      if (isYoutubeUrl(songName)) {
+        const ytdlProcess = ytdl(songName, {
+          filter: "audioonly",
+          highWaterMark: 1 << 25,
+        });
 
-      ytdlProcess.on("error", (error) => console.error("process error: ", error));
-      const resource = createAudioResource(ytdlProcess);
-      
-      player.play(resource);
+        ytdlProcess.on("error", (error) => {
+          console.error("process error: ", error);
+          return interaction.reply(
+            "Seem like your url you provided not a youtube domain"
+          );
+        });
+        const resource = createAudioResource(ytdlProcess);
 
-      player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
-        console.log("Audio player is in the Playing state!");
-      });
-      return 
+        player.play(resource);
+
+        player.on(AudioPlayerStatus.Playing, (oldState, newState) => {
+          console.log("Audio player is in the Playing state!");
+        });
+        return interaction.editReply({ content: `Played ${songName}` });
+      }
+
+      //if the url is not valid then execute that code here
+      return interaction.editReply(
+        "Your url you provided is not a youtube URL , Please provide a valid youtube URL!"
+      );
     }
 
     //if the user's input is a song name then do this code
@@ -124,10 +157,5 @@ module.exports = {
     });
 
     return interaction.editReply({ content: `Played ${urlSearch}` });
-
-    // if (subscription) {
-    //   // Unsubscribe after 5 seconds (stop playing audio on the voice connection)
-    //   console.log(1);
-    // }
   },
 };
